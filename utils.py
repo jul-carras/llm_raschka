@@ -1,6 +1,8 @@
 import re
+import tiktoken
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+
 
 class SimpleTokenizerV1:
     def __init__(self, vocab):
@@ -64,3 +66,14 @@ class GPTDatasetV1(Dataset):
     
     def __getitem__(self, idx):
         return self.input_ids[idx], self.target_ids[idx]
+    
+
+def create_dataload_v1(txt, batch_size=4, max_length=256, stride=128, shuffle=True, drop_last=True, num_workers=0):
+    '''
+    The dataset class more or less encapsulates the sliding window logic. It breaks the text into chunks.
+    '''
+    tokenizer = tiktoken.get_encoding('gpt2')
+    dataset = GPTDatasetV1(txt, tokenizer, max_length, stride)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last, num_workers=num_workers)
+
+    return dataloader
