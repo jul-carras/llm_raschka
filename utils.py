@@ -2,6 +2,7 @@ import re
 import tiktoken
 import torch
 from torch.utils.data import Dataset, DataLoader
+import torch.nn as nn
 
 
 class SimpleTokenizerV1:
@@ -66,6 +67,53 @@ class GPTDatasetV1(Dataset):
     
     def __getitem__(self, idx):
         return self.input_ids[idx], self.target_ids[idx]
+    
+
+class SelfAttention_v1(nn.Module):
+    '''
+    Setting our own parameters layers
+    '''
+    def __init__(self, d_in, d_out):
+        super().__init__()
+        self.W_query = nn.Parameter(torch.rand(d_in, d_out))
+        self.W_key = nn.Parameter(torch.rand(d_in, d_out))
+        self.W_value = nn.Parameter(torch.rand(d_in, d_out))
+    
+    def forward(self, x):
+        keys = x @ self.W_key
+        queries = x @ self.W_query
+        values = x @ self.W_value
+        attn_scores = queries @ keys.T
+        attn_weights = torch.softmax(
+            attn_scores/keys.shape[1]**0.5, dim=-1
+            )
+        
+        context_vec = attn_weights @ values
+
+        return context_vec
+
+class SelfAttention_v2(nn.Module):
+    '''
+    Setting our own parameters layers
+    '''
+    def __init__(self, d_in, d_out, qkv_bias=False):
+        super().__init__()
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+    
+    def forward(self, x):
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+        attn_scores = queries @ keys.T
+        attn_weights = torch.softmax(
+            attn_scores/keys.shape[1]**0.5, dim=-1
+            )
+        
+        context_vec = attn_weights @ values
+
+        return context_vec
     
 
 def create_dataload_v1(txt, batch_size=4, max_length=256, stride=128, shuffle=True, drop_last=True, num_workers=0):
